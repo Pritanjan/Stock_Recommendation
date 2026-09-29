@@ -14,8 +14,7 @@ const CandlestickChart = dynamic(
   { ssr: false }
 );
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://127.0.0.1:8000";
+import { BACKEND_URL, WS_URL } from "@/config/api";
 
 export default function Dashboard() {
   const [symbol, setSymbol] = useState<string>("RELIANCE.NS");

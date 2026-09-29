@@ -205,11 +205,11 @@ export const SignalBreakdownPanel: React.FC<SignalBreakdownPanelProps> = ({
             <div className="bg-gray-950/60 p-1.5 rounded border border-gray-800/50">
               <span className="text-gray-500 block text-[9px]">SIGNAL</span>
               <span className="text-orange-400 font-bold text-[11px]">
-                {breakdown.macd.signal_line?.toFixed(2) ||
-                  breakdown.macd.signal_val?.toFixed(2) ||
-                  (typeof breakdown.macd.signal === "number"
-                    ? breakdown.macd.signal.toFixed(2)
-                    : "0.00")}
+                {breakdown.macd.signal_line !== undefined && breakdown.macd.signal_line !== null
+                  ? Number(breakdown.macd.signal_line).toFixed(2)
+                  : breakdown.macd.signal_val !== undefined && breakdown.macd.signal_val !== null
+                  ? Number(breakdown.macd.signal_val).toFixed(2)
+                  : "0.00"}
               </span>
             </div>
             <div className="bg-gray-950/60 p-1.5 rounded border border-gray-800/50">

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Search, RefreshCw, Activity, Zap, TrendingUp } from "lucide-react";
+import { BACKEND_URL } from "@/config/api";
 
 interface HeaderProps {
   currentSymbol: string;
@@ -56,7 +57,7 @@ export const Header: React.FC<HeaderProps> = ({
 
     const timer = setTimeout(async () => {
       try {
-        const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+        const backendUrl = BACKEND_URL;
         const res = await fetch(`${backendUrl}/api/stocks/search?q=${encodeURIComponent(searchInput.trim())}`);
         if (res.ok) {
           const data = await res.json();
