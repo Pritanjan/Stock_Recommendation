@@ -11,6 +11,21 @@ interface WatchlistTableProps {
   isLoading: boolean;
 }
 
+const SECTOR_TABS = [
+  "ALL",
+  "NIFTY 50",
+  "Banking",
+  "Finance",
+  "IT & Tech",
+  "Auto",
+  "Energy",
+  "Consumer",
+  "Pharma",
+  "Metals",
+  "Infra",
+  "Defence"
+] as const;
+
 export const WatchlistTable: React.FC<WatchlistTableProps> = ({
   items,
   currentSymbol,
@@ -18,12 +33,21 @@ export const WatchlistTable: React.FC<WatchlistTableProps> = ({
   isLoading,
 }) => {
   const [filterText, setFilterText] = useState("");
+  const [selectedSector, setSelectedSector] = useState<string>("ALL");
   const [signalFilter, setSignalFilter] = useState<"ALL" | "BUY" | "HOLD" | "SELL">("ALL");
+  const [displayLimit, setDisplayLimit] = useState<number>(20);
 
   const filteredItems = items.filter((item) => {
+    // Sector filter
+    if (selectedSector === "NIFTY 50" && !item.is_nifty50) return false;
+    if (selectedSector !== "ALL" && selectedSector !== "NIFTY 50" && item.sector !== selectedSector) {
+      return false;
+    }
+
     const matchesSearch =
       item.symbol.toLowerCase().includes(filterText.toLowerCase()) ||
-      item.name.toLowerCase().includes(filterText.toLowerCase());
+      item.name.toLowerCase().includes(filterText.toLowerCase()) ||
+      (item.sector && item.sector.toLowerCase().includes(filterText.toLowerCase()));
 
     if (!matchesSearch) return false;
 
@@ -39,6 +63,8 @@ export const WatchlistTable: React.FC<WatchlistTableProps> = ({
 
     return true;
   });
+
+  const displayedItems = displayLimit === -1 ? filteredItems : filteredItems.slice(0, displayLimit);
 
   const getVerdictBadge = (verdict: string) => {
     if (verdict === "STRONG BUY") {
@@ -61,11 +87,16 @@ export const WatchlistTable: React.FC<WatchlistTableProps> = ({
       {/* Table Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h3 className="text-base font-bold text-white tracking-wide">
-            Indian Market Watchlist & Signal Radar
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-bold text-white tracking-wide">
+              Indian Market Watchlist & Signal Radar
+            </h3>
+            <span className="rounded-full bg-cyan-950/80 border border-cyan-800/60 px-2 py-0.5 text-[10px] font-bold text-cyan-400">
+              {items.length} Indian Equities
+            </span>
+          </div>
           <p className="text-xs text-gray-400">
-            NSE & BSE real-time scanner with computed SMA, RSI, and MACD indicators
+            Real-time scanner across all NIFTY 50 and top Indian market leaders with SMA, RSI, and MACD indicators
           </p>
         </div>
 
@@ -75,14 +106,14 @@ export const WatchlistTable: React.FC<WatchlistTableProps> = ({
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-gray-400 pointer-events-none" />
             <input
               type="text"
-              placeholder="Filter Indian stocks..."
+              placeholder="Search Indian stocks or sector..."
               value={filterText}
               onChange={(e) => setFilterText(e.target.value)}
-              className="rounded-lg bg-gray-900 border border-gray-800 pl-8 pr-3 py-1.5 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-cyan-500 w-36 sm:w-44"
+              className="rounded-lg bg-gray-900 border border-gray-800 pl-8 pr-3 py-1.5 text-xs text-gray-100 placeholder-gray-500 focus:outline-none focus:border-cyan-500 w-44 sm:w-56"
             />
           </div>
 
-          {/* Filter Pills */}
+          {/* Signal Filter Pills */}
           <div className="flex items-center rounded-lg bg-gray-900 border border-gray-800 p-0.5 text-xs">
             {(["ALL", "BUY", "HOLD", "SELL"] as const).map((sig) => (
               <button
@@ -100,6 +131,27 @@ export const WatchlistTable: React.FC<WatchlistTableProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Sector Filter Bar */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar border-b border-gray-800/60 text-xs">
+        <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mr-1 shrink-0">
+          Sector:
+        </span>
+        {SECTOR_TABS.map((sec) => (
+          <button
+            key={sec}
+            onClick={() => setSelectedSector(sec)}
+            className={`shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+              selectedSector === sec
+                ? "bg-cyan-600 text-white shadow-sm shadow-cyan-600/30"
+                : "bg-gray-900/80 text-gray-400 hover:text-gray-200 hover:bg-gray-800"
+            }`}
+          >
+            {sec}
+          </button>
+        ))}
+      </div>
+
 
       {/* Table Container */}
       <div className="overflow-x-auto">
@@ -131,7 +183,7 @@ export const WatchlistTable: React.FC<WatchlistTableProps> = ({
                 </td>
               </tr>
             ) : (
-              filteredItems.map((item) => {
+              displayedItems.map((item) => {
                 const isSelected = item.symbol === currentSymbol;
                 const isPositive = item.change >= 0;
 
@@ -145,14 +197,26 @@ export const WatchlistTable: React.FC<WatchlistTableProps> = ({
                         : "hover:bg-gray-900/50"
                     }`}
                   >
-                    {/* Symbol & Name */}
+                    {/* Symbol, Name & Badges */}
                     <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-white text-sm">{item.symbol.replace(".NS", "").replace(".BO", "")}</span>
-                        <span className="rounded bg-cyan-950/70 border border-cyan-800/40 px-1 py-0.5 text-[9px] font-semibold text-cyan-400">
-                          {item.symbol.includes(".BO") ? "BSE" : "NSE"}
-                        </span>
-                        <span className="text-[11px] text-gray-400 truncate max-w-[120px]">
+                      <div className="flex flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-bold text-white text-sm">{item.symbol.replace(".NS", "").replace(".BO", "")}</span>
+                          <span className="rounded bg-cyan-950/70 border border-cyan-800/40 px-1 py-0.2 text-[9px] font-semibold text-cyan-400">
+                            {item.symbol.includes(".BO") ? "BSE" : "NSE"}
+                          </span>
+                          {item.is_nifty50 && (
+                            <span className="rounded bg-blue-950/70 border border-blue-700/50 px-1 py-0.2 text-[9px] font-bold text-blue-300">
+                              NIFTY 50
+                            </span>
+                          )}
+                          {item.sector && (
+                            <span className="rounded bg-gray-800/80 px-1.5 py-0.2 text-[9px] text-gray-300">
+                              {item.sector}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[11px] text-gray-400 truncate max-w-[200px]">
                           {item.name}
                         </span>
                       </div>
@@ -254,6 +318,32 @@ export const WatchlistTable: React.FC<WatchlistTableProps> = ({
           </tbody>
         </table>
       </div>
+
+      {/* Pagination / Item Count Footer */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-gray-800/60 text-xs text-gray-400">
+        <div>
+          Showing <span className="font-bold text-white">{displayedItems.length}</span> of{" "}
+          <span className="font-bold text-white">{filteredItems.length}</span> matching stocks (Total monitored:{" "}
+          <span className="font-bold text-cyan-400">{items.length}</span>)
+        </div>
+        <div className="flex items-center gap-2">
+          {displayLimit !== -1 && displayedItems.length < filteredItems.length && (
+            <button
+              onClick={() => setDisplayLimit((prev) => prev + 25)}
+              className="px-3 py-1 bg-gray-900 hover:bg-gray-800 text-gray-200 border border-gray-700/60 rounded-lg transition-colors font-medium text-xs"
+            >
+              Load More (+25)
+            </button>
+          )}
+          <button
+            onClick={() => setDisplayLimit(displayLimit === -1 ? 20 : -1)}
+            className="px-3 py-1 bg-cyan-950/60 hover:bg-cyan-900/60 text-cyan-300 border border-cyan-800/40 rounded-lg transition-colors font-medium text-xs"
+          >
+            {displayLimit === -1 ? "Show Top 20" : "View All"}
+          </button>
+        </div>
+      </div>
+
     </div>
   );
 };

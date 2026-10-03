@@ -12,15 +12,25 @@ from services.stock_service import (
     is_indian_market_open,
     DEFAULT_WATCHLIST,
     POPULAR_STOCKS_METADATA,
+    STOCK_SECTOR_MAP,
     INDIAN_TICKER_ALIASES
 )
 
 router = APIRouter(prefix="/api/stocks", tags=["Stocks"])
 
 @router.get("/watchlist")
-def get_watchlist():
-    """Retrieve full batch data for the watchlist table."""
-    return fetch_watchlist_batch(DEFAULT_WATCHLIST)
+def get_watchlist(category: Optional[str] = Query(None), limit: Optional[int] = Query(None)):
+    """Retrieve batch data for the Indian market watchlist table."""
+    items = fetch_watchlist_batch(DEFAULT_WATCHLIST)
+    if category and category.lower() != "all":
+        cat_lower = category.lower()
+        if cat_lower == "nifty50":
+            items = [i for i in items if i.get("is_nifty50")]
+        else:
+            items = [i for i in items if i.get("sector", "").lower() == cat_lower]
+    if limit and limit > 0:
+        items = items[:limit]
+    return items
 
 @router.get("/market-status")
 def get_market_status():
@@ -29,36 +39,39 @@ def get_market_status():
 
 @router.get("/search")
 def search_stocks(q: str = Query(..., min_length=1)):
-    """Search stocks by symbol or company name."""
+    """Search stocks by symbol or company name across top Indian equities and NSE/BSE."""
     query = q.upper().strip()
     results = []
     seen = set()
 
-    # 1. Check exact or prefix in aliases (e.g. 'LIC' -> LICI.NS)
+    # 1. Exact or prefix in aliases (e.g. 'LIC' -> LICI.NS, 'TATAMOTORS' -> TMCV.NS)
     for alias, target in INDIAN_TICKER_ALIASES.items():
         if query == alias or alias.startswith(query):
             if target not in seen:
-                name = POPULAR_STOCKS_METADATA.get(target, target)
-                results.append({"symbol": target, "name": name})
+                meta = STOCK_SECTOR_MAP.get(target, {})
+                name = meta.get("name", POPULAR_STOCKS_METADATA.get(target, target))
+                sector = meta.get("sector", "Other")
+                results.append({"symbol": target, "name": name, "sector": sector})
                 seen.add(target)
 
-    # 2. Check in popular metadata
-    for sym, name in POPULAR_STOCKS_METADATA.items():
+    # 2. Check catalog metadata (symbol or company name)
+    for sym, meta in STOCK_SECTOR_MAP.items():
         clean_sym = sym.replace(".NS", "").replace(".BO", "")
+        name = meta.get("name", "")
         if (query in sym or query in clean_sym or query in name.upper()) and sym not in seen:
-            results.append({"symbol": sym, "name": name})
+            results.append({"symbol": sym, "name": name, "sector": meta.get("sector", "Other")})
             seen.add(sym)
 
-    # 3. Use yfinance search for dynamic Indian stocks if needed
-    if len(results) < 4:
+    # 3. Dynamic yfinance search for any other Indian stock on NSE/BSE
+    if len(results) < 8:
         try:
-            s = yf.Search(q, max_results=5)
+            s = yf.Search(q, max_results=8)
             for item in s.quotes:
                 sym = item.get("symbol", "")
                 ex = item.get("exchange", "")
-                if (sym.endswith((".NS", ".BO")) or ex in ["NSI", "BSE"]) and sym not in seen:
+                if (sym.endswith((".NS", ".BO")) or ex in ["NSI", "BSE", "NSE"]) and sym not in seen:
                     company_name = item.get("shortname") or item.get("longname") or sym
-                    results.append({"symbol": sym, "name": company_name})
+                    results.append({"symbol": sym, "name": company_name, "sector": "NSE/BSE"})
                     seen.add(sym)
         except Exception:
             pass
@@ -66,11 +79,14 @@ def search_stocks(q: str = Query(..., min_length=1)):
     # 4. If normalized candidate not yet in list, add it
     norm_sym = normalize_symbol(query)
     if norm_sym not in seen:
-        display_name = POPULAR_STOCKS_METADATA.get(norm_sym, f"{query} (NSE)")
-        results.append({"symbol": norm_sym, "name": display_name})
+        meta = STOCK_SECTOR_MAP.get(norm_sym, {})
+        display_name = meta.get("name", f"{query} (NSE)")
+        sector = meta.get("sector", "Indian Market")
+        results.append({"symbol": norm_sym, "name": display_name, "sector": sector})
         seen.add(norm_sym)
 
-    return results[:8]
+    return results[:16]
+
 
 @router.get("/{symbol}")
 def get_stock(symbol: str):

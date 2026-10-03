@@ -55,6 +55,30 @@ export default function Dashboard() {
         }
         const data: StockAnalysisResponse = await res.json();
         setAnalysis(data);
+
+        // Prepend active stock to watchlist table so user sees it right away
+        setWatchlist((prev) => {
+          if (prev.some((item) => item.symbol === data.symbol)) return prev;
+          const newItem: WatchlistItem = {
+            symbol: data.symbol,
+            name: data.quote.name,
+            sector: "Selected",
+            is_nifty50: false,
+            price: data.quote.price,
+            change: data.quote.change,
+            change_percent: data.quote.change_percent,
+            volume: data.quote.volume,
+            sma_20: data.indicators.sma_20,
+            sma_50: data.indicators.sma_50,
+            sma_trend: data.recommendation.breakdown.sma.signal,
+            rsi: data.indicators.rsi_14,
+            rsi_signal: data.recommendation.breakdown.rsi.signal,
+            macd_signal: data.recommendation.breakdown.macd.signal,
+            recommendation: data.recommendation.verdict,
+            score: data.recommendation.score,
+          };
+          return [newItem, ...prev];
+        });
       } catch (err: any) {
         console.error("Error fetching analysis:", err);
         setError(err.message || "Failed to load stock data");

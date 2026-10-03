@@ -17,6 +17,7 @@ interface HeaderProps {
 }
 
 const POPULAR_TICKERS = [
+  { label: "NIFTY 50", symbol: "^NSEI" },
   { label: "RELIANCE", symbol: "RELIANCE.NS" },
   { label: "TCS", symbol: "TCS.NS" },
   { label: "HDFC BANK", symbol: "HDFCBANK.NS" },
@@ -28,7 +29,19 @@ const POPULAR_TICKERS = [
   { label: "TATA MOTORS", symbol: "TMCV.NS" },
   { label: "ITC", symbol: "ITC.NS" },
   { label: "L&T", symbol: "LT.NS" },
-  { label: "NIFTY 50", symbol: "^NSEI" },
+  { label: "MARUTI", symbol: "MARUTI.NS" },
+  { label: "BAJAJ FINANCE", symbol: "BAJFINANCE.NS" },
+  { label: "SUN PHARMA", symbol: "SUNPHARMA.NS" },
+  { label: "TATA STEEL", symbol: "TATASTEEL.NS" },
+  { label: "TITAN", symbol: "TITAN.NS" },
+  { label: "ZOMATO", symbol: "ZOMATO.NS" },
+  { label: "JIO FINANCE", symbol: "JIOFIN.NS" },
+  { label: "HAL", symbol: "HAL.NS" },
+  { label: "BEL", symbol: "BEL.NS" },
+  { label: "COAL INDIA", symbol: "COALINDIA.NS" },
+  { label: "NTPC", symbol: "NTPC.NS" },
+  { label: "ADANI ENT", symbol: "ADANIENT.NS" },
+  { label: "SUZLON", symbol: "SUZLON.NS" },
 ];
 
 export const Header: React.FC<HeaderProps> = ({
@@ -43,7 +56,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleSimulate,
 }) => {
   const [searchInput, setSearchInput] = useState("");
-  const [suggestions, setSuggestions] = useState<Array<{ symbol: string; name: string }>>([]);
+  const [suggestions, setSuggestions] = useState<Array<{ symbol: string; name: string; sector?: string }>>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchContainerRef = React.useRef<HTMLDivElement>(null);
 
@@ -156,7 +169,12 @@ export const Header: React.FC<HeaderProps> = ({
                     <span className="font-bold text-sm text-white group-hover:text-cyan-300 transition-colors">
                       {item.symbol.replace(".NS", "").replace(".BO", "")}
                     </span>
-                    <span className="text-xs text-gray-400 truncate max-w-[240px]">
+                    {item.sector && (
+                      <span className="rounded bg-cyan-950/70 border border-cyan-800/40 px-1.5 py-0.5 text-[9px] font-semibold text-cyan-300">
+                        {item.sector}
+                      </span>
+                    )}
+                    <span className="text-xs text-gray-400 truncate max-w-[200px]">
                       {item.name}
                     </span>
                   </div>

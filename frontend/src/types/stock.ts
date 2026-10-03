@@ -93,6 +93,8 @@ export interface StockAnalysisResponse {
 export interface WatchlistItem {
   symbol: string;
   name: string;
+  sector?: string;
+  is_nifty50?: boolean;
   price: number;
   change: number;
   change_percent: number;
